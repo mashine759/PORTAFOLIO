@@ -1,0 +1,47 @@
+function onEdit(e) {
+  const sheet = e.source.getActiveSheet();
+  const rango = e.range;
+  const columna = rango.getColumn();
+  const valor = rango.getValue();
+  const fila = rango.getRow();
+  const ultimaColumna = sheet.getLastColumn();
+  const hojaActual = e.source.getActiveSheet().getName()==="Empleados";
+
+  const checarColumna = 7;
+  const valorDetonante = "Registrar baja";
+
+  if(valor == valorDetonante && columna == checarColumna && hojaActual)
+  {   
+      var ui = SpreadsheetApp.getUi();
+      var respuesta = ui.alert('Confirmación', '¿Deseas registrar baja de empleado?', ui.ButtonSet.YES_NO);
+      
+      if (respuesta == ui.Button.NO) {
+        // Si el usuario cancela, no hacer nada
+        return;
+      }
+
+      const filaCompletaDatos = sheet.getRange(fila, 1,1, ultimaColumna);
+      const filaValores = filaCompletaDatos.getValues();
+
+      // Crear un nuevo objeto de fecha
+      const fechaEliminacion = new Date();
+
+      // Añadir la fecha al final de la fila
+      filaValores[0].push(fechaEliminacion);
+
+      
+      const hojaHistorial = e.source.getSheetByName("Bajas de empleados");
+      if (!hojaHistorial){
+        hojaHistorial = e.source.insertSheet("Bajas de empleados");
+      }
+
+      const historialUltimaFila = hojaHistorial.getLastRow();
+      const siguienteFilaVacia = historialUltimaFila + 1;
+      
+      const rangoDestino = hojaHistorial.getRange(siguienteFilaVacia, 1, 1, filaValores[0].length);
+      rangoDestino.setValues(filaValores);
+
+      sheet.deleteRow(fila);
+
+  }
+}
