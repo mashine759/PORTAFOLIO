@@ -1,0 +1,37 @@
+function onOpen() {
+  SpreadsheetApp
+    .getUi()
+    .createMenu("Más opciones")
+    .addItem("Agregar empleados", "mySideBar")  // Primera opción
+    .addToUi();  // Añadimos las opciones al menú
+}
+
+
+function mySideBar() {
+  const widget = HtmlService.createHtmlOutputFromFile("Form.html");
+  widget.setTitle("Agregar empleados: ");
+ SpreadsheetApp.getUi().showSidebar(widget);
+}
+
+function appendRowFromFormSubmit(form) {
+  const idEmpleadoConPrefijo = "VIA" + form.idEmpleado;
+  const row = [
+    idEmpleadoConPrefijo, 
+    form.nombre, 
+    form.apellido, 
+    form.telefono, 
+    form.oficinas, 
+    form.departamento,
+    "Activo"
+    ];
+ 
+
+  const hojaEmpleados = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Empleados");
+
+  // Asegúrate de que la hoja "Empleados" exista
+  if (hojaEmpleados) {
+    hojaEmpleados.appendRow(row); // Agregar la fila a la hoja "Empleados"
+  } else {
+    Logger.log('La hoja "Empleados" no existe');
+  }
+}
