@@ -1,0 +1,17 @@
+function onEdit(e) {
+  
+  var fila = e.range.getRow();
+  var columna = e.range.getColumn();
+  const fecha = new Date();
+  const hojaActual = e.source.getActiveSheet().getName()==="Actividades";
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+
+  if(columna === 6 && fila > 1 && hojaActual)
+  {
+      e.source.getActiveSheet().getRange(fila, 7).setValue(fecha);
+      ss.toast("Se actualizo fecha y hora");
+  }
+
+  
+}
