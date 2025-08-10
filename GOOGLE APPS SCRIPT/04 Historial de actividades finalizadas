@@ -1,0 +1,46 @@
+function onEdit(e) {
+  const sheet = e.source.getActiveSheet();
+  const rango = e.range;
+  const columna = rango.getColumn();
+  const valor = rango.getValue();
+  const fila = rango.getRow();
+  const ultimaColumna = sheet.getLastColumn();
+  const hojaActual = e.source.getActiveSheet().getName()==="Actividades";
+
+  const checarColumna = 5;
+  const valorDetonante = "Finalizado";
+
+  if(valor == valorDetonante && columna == checarColumna && hojaActual)
+  {   
+      var ui = SpreadsheetApp.getUi();
+      var respuesta = ui.alert('Confirmación', '¿Deseas mover los datos al historial?', ui.ButtonSet.YES_NO);
+      
+      if (respuesta == ui.Button.NO) {
+        // Si el usuario cancela, no hacer nada
+        return;
+      }
+
+      const filaCompletaDatos = sheet.getRange(fila, 1,1, ultimaColumna);
+      const filaValores = filaCompletaDatos.getValues();
+
+      const fechaEliminacion = new Date();
+      filaValores[0].splice(4, 1, fechaEliminacion);
+
+      //ui.alert(filaValores, ui.ButtonSet.OK);
+
+      
+      const hojaHistorial = e.source.getSheetByName("Historial Actividades");
+      if (!hojaHistorial){
+        hojaHistorial = e.source.insertSheet("Historial Actividades");
+      }
+
+      const historialUltimaFila = hojaHistorial.getLastRow();
+      const siguienteFilaVacia = historialUltimaFila + 1;
+      
+      const rangoDestino = hojaHistorial.getRange(siguienteFilaVacia, 1, 1, filaValores[0].length);
+      rangoDestino.setValues(filaValores);
+
+      sheet.deleteRow(fila);
+
+  }
+}
