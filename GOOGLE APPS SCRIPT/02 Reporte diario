@@ -1,0 +1,78 @@
+//seleccionar aplicacion sheets actual
+const hoja = SpreadsheetApp.getActiveSpreadsheet();
+//Seleccionar hoja de objetivos
+const hojaTurno = hoja.getSheetByName("Objetivos diarios");
+
+class DatosHojaReporteDiario
+{
+  
+  constructor(){
+    const hoja = hojaTurno;
+
+    this.hoja = hoja;
+    //buscar ultima fila y columna
+    this.ultimaFila = hoja.getLastRow();
+    this.ultimaColumna = hoja.getLastColumn();
+    this.datos = hoja.getRange(2,1,this.ultimaFila, this.ultimaColumna);
+    this.valores = this.datos.getValues();
+    
+    function modificarFila(fila) {
+    var nuevaFila = fila.slice();  // Copia la fila original
+    nuevaFila.splice(1, 1);        // Elimina la segunda columna (ajustamos a índice 0)
+    return nuevaFila;              // Devuelve la nueva fila sin la columna eliminada
+    }
+
+    this.nuevosDatos = this.valores.map(modificarFila);
+  }
+  getDatos()
+  {
+    
+    return this.nuevosDatos;
+  }
+  
+  
+}
+
+//funcionar para finarlizar turno
+function finalizarTurno() {
+  const reporte = new DatosHojaReporteDiario();
+
+
+  let ultimaFila = reporte.ultimaFila;
+  let ultimaColumna = reporte.ultimaColumna - 1;
+  let agarrarDatos = reporte.getDatos();
+
+  
+
+  //Buscar hoja de historial y si no existe crearla
+  var historial = hoja.getSheetByName("Historial Objetivos");
+  if(!historial)
+  {
+    historial = hoja.insertSheet("Historial Objetivos");
+  }
+
+
+//buscar ultima fila del historial con datos y sumarle 1 para elegir la siguiente vacia
+const hultimaFila = historial.getLastRow() + 1;
+//buscar rango para imprimir fecha
+const rangoHistFecha = historial.getRange(hultimaFila, 1);
+//buscar rango donde se copiaran los datos
+const rangoHistorialCompleto = historial.getRange(hultimaFila+1,2,ultimaFila,ultimaColumna);
+//creacion de variable fecha
+const fecha = new Date();
+//pegar fecha en el historial
+rangoHistFecha.setValue(fecha);
+// Colorear las tres columnas de la fila donde se pegó la fecha (ajusta el rango según las columnas que deseas colorear)
+const columnasParaColorear = historial.getRange(hultimaFila, 1, 1, 6); // Columna 2 a 4 (puedes ajustar esto)
+columnasParaColorear.setBackground('#FFFF00');  // Amarillo, cambia el color según lo necesites
+//pegar datos en el historial
+rangoHistorialCompleto.setValues(agarrarDatos);
+
+
+}
+
+function limpiarReporteDiario()
+{
+  hojaTurno.getRange("B2:B8").clearContent();
+  hojaTurno.getRange("D2:D8").clearContent();
+}
