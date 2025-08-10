@@ -1,0 +1,185 @@
+-- 1. Crear base de datos
+CREATE DATABASE SeguimientoPaqueteria;
+GO
+
+USE SeguimientoPaqueteria;
+GO
+
+-- 2. Tabla Rutas
+CREATE TABLE Rutas (
+    IdRuta INT PRIMARY KEY IDENTITY(1,1),
+    NombreRuta NVARCHAR(100) NOT NULL,
+    Origen NVARCHAR(100),
+    Destino NVARCHAR(100)
+);
+GO
+
+-- 3. Tabla Empleados (Repartidores)
+CREATE TABLE Empleados (
+    IdEmpleado INT PRIMARY KEY IDENTITY(1,1),
+    Nombre NVARCHAR(50) NOT NULL,
+    Apellido NVARCHAR(50) NOT NULL,
+    Telefono NVARCHAR(20),
+    Email NVARCHAR(100)
+);
+GO
+
+-- 4. Tabla Paquetes
+CREATE TABLE Paquetes (
+    IdPaquete INT PRIMARY KEY IDENTITY(1,1),
+    CodigoSeguimiento NVARCHAR(50) NOT NULL UNIQUE,
+    Descripcion NVARCHAR(200),
+    Peso DECIMAL(6,2),
+    IdRuta INT NOT NULL,
+    IdEmpleado INT NULL,
+    FechaEnvio DATE,
+    FechaEntregaEstimada DATE,
+    FOREIGN KEY (IdRuta) REFERENCES Rutas(IdRuta),
+    FOREIGN KEY (IdEmpleado) REFERENCES Empleados(IdEmpleado)
+);
+GO
+
+-- 5. Tabla EstadosEnvio (registro histórico de estados)
+CREATE TABLE EstadosEnvio (
+    IdEstado INT PRIMARY KEY IDENTITY(1,1),
+    IdPaquete INT NOT NULL,
+    FechaEstado DATETIME NOT NULL DEFAULT GETDATE(),
+    Estado NVARCHAR(50) NOT NULL, -- Ej: "En bodega", "En ruta", "Entregado"
+    Comentarios NVARCHAR(200),
+    FOREIGN KEY (IdPaquete) REFERENCES Paquetes(IdPaquete)
+);
+GO
+
+-- 6. Insertar datos de ejemplo
+
+INSERT INTO Rutas (NombreRuta, Origen, Destino) VALUES
+('Ruta Norte', 'Ciudad A', 'Ciudad B'),
+('Ruta Sur', 'Ciudad C', 'Ciudad D'),
+('Ruta Este', 'Ciudad E', 'Ciudad F'),
+('Ruta Oeste', 'Ciudad G', 'Ciudad H');
+
+INSERT INTO Empleados (Nombre, Apellido, Telefono, Email) VALUES
+('Luis', 'García', '555-1234', 'luis.garcia@logistica.com'),
+('María', 'Pérez', '555-5678', 'maria.perez@logistica.com'),
+('Ana', 'Ramírez', '555-9101', 'ana.ramirez@logistica.com'),
+('Jorge', 'Sánchez', '555-1122', 'jorge.sanchez@logistica.com');
+
+INSERT INTO Paquetes (CodigoSeguimiento, Descripcion, Peso, IdRuta, IdEmpleado, FechaEnvio, FechaEntregaEstimada) VALUES
+('PKG001', 'Electrónicos', 2.5, 1, 1, '2025-08-05', '2025-08-10'),
+('PKG002', 'Ropa', 1.2, 2, 2, '2025-08-06', '2025-08-12'),
+('PKG003', 'Libros', 3.0, 3, 3, '2025-08-07', '2025-08-15'),
+('PKG004', 'Artículos de Cocina', 4.5, 4, 4, '2025-08-08', '2025-08-16'),
+('PKG005', 'Juguetes', 2.8, 1, 1, '2025-08-09', '2025-08-17'),
+('PKG007', 'Material de Oficina', 1.5, 3, 3, '2025-07-28', DATEADD(DAY, -3, CAST(GETDATE() AS DATE)));
+
+
+
+INSERT INTO EstadosEnvio (IdPaquete, Estado, Comentarios) VALUES
+(1, 'En bodega', 'Recibido en almacén'),
+(1, 'En ruta', 'Salió para entrega'),
+(2, 'En bodega', 'Listo para envío'),
+(3, 'En bodega', 'Paquete recibido en almacén'),
+(3, 'En ruta', 'Paquete en tránsito'),
+(4, 'En bodega', 'Listo para envío'),
+(5, 'En bodega', 'Recibido'),
+(5, 'En ruta', 'En camino a destino'),
+(5, 'Entregado', 'Entregado con éxito'),
+((SELECT IdPaquete FROM Paquetes WHERE CodigoSeguimiento = 'PKG007'), 'En bodega', 'Retrasado, en almacén');
+GO
+
+-- 7. Consulta ejemplo: Paquetes por ruta con estado actual
+
+SELECT 
+    r.NombreRuta,
+    p.CodigoSeguimiento,
+    p.Descripcion,
+    e.Estado,
+    e.FechaEstado
+FROM Paquetes p
+JOIN Rutas r ON p.IdRuta = r.IdRuta
+JOIN EstadosEnvio e ON e.IdPaquete = p.IdPaquete
+WHERE e.FechaEstado = (
+    SELECT MAX(FechaEstado) FROM EstadosEnvio WHERE IdPaquete = p.IdPaquete
+)
+ORDER BY r.NombreRuta, e.FechaEstado DESC;
+GO
+
+-- 8. Ver todos los paquetes con su estado actual y repartidor asignado
+
+SELECT 
+    p.CodigoSeguimiento,
+    p.Descripcion,
+    r.NombreRuta,
+    CONCAT(e.Nombre, ' ', e.Apellido) AS Repartidor,
+    es.Estado,
+    es.FechaEstado
+FROM Paquetes p
+JOIN Rutas r ON p.IdRuta = r.IdRuta
+LEFT JOIN Empleados e ON p.IdEmpleado = e.IdEmpleado
+JOIN EstadosEnvio es ON es.IdPaquete = p.IdPaquete
+WHERE es.FechaEstado = (
+    SELECT MAX(FechaEstado) FROM EstadosEnvio WHERE IdPaquete = p.IdPaquete
+)
+ORDER BY es.FechaEstado DESC;
+
+-- 9. Paquetes entregados en los últimos 7 días
+SELECT 
+    p.CodigoSeguimiento,
+    p.Descripcion,
+    r.NombreRuta,
+    CONCAT(e.Nombre, ' ', e.Apellido) AS Repartidor,
+    es.FechaEstado AS FechaEntrega
+FROM Paquetes p
+JOIN Rutas r ON p.IdRuta = r.IdRuta
+LEFT JOIN Empleados e ON p.IdEmpleado = e.IdEmpleado
+JOIN EstadosEnvio es ON es.IdPaquete = p.IdPaquete
+WHERE es.Estado = 'Entregado'
+  AND es.FechaEstado >= DATEADD(DAY, -7, GETDATE())
+ORDER BY es.FechaEstado DESC;
+
+-- 10. Paquetes retrasados (Fecha estimada menor que hoy y no entregados)
+
+SELECT 
+    p.CodigoSeguimiento,
+    p.Descripcion,
+    r.NombreRuta,
+    CONCAT(e.Nombre, ' ', e.Apellido) AS Repartidor,
+    p.FechaEntregaEstimada,
+    es.Estado
+FROM Paquetes p
+JOIN Rutas r ON p.IdRuta = r.IdRuta
+LEFT JOIN Empleados e ON p.IdEmpleado = e.IdEmpleado
+JOIN EstadosEnvio es ON es.IdPaquete = p.IdPaquete
+WHERE p.FechaEntregaEstimada < CAST(GETDATE() AS DATE)
+  AND es.FechaEstado = (
+      SELECT MAX(FechaEstado) FROM EstadosEnvio WHERE IdPaquete = p.IdPaquete
+  )
+  AND es.Estado <> 'Entregado'
+ORDER BY p.FechaEntregaEstimada ASC;
+
+-- 11. Cantidad de paquetes por estado actual
+
+SELECT 
+    es.Estado,
+    COUNT(*) AS CantidadPaquetes
+FROM EstadosEnvio es
+JOIN (
+    SELECT IdPaquete, MAX(FechaEstado) AS MaxFecha
+    FROM EstadosEnvio
+    GROUP BY IdPaquete
+) esMax ON es.IdPaquete = esMax.IdPaquete AND es.FechaEstado = esMax.MaxFecha
+GROUP BY es.Estado;
+
+-- 12. Histórico completo de estados para un paquete específico
+
+DECLARE @CodigoSeguimiento NVARCHAR(50) = 'PKG005'; -- Cambia el código que quieras consultar
+
+SELECT 
+    p.CodigoSeguimiento,
+    es.Estado,
+    es.FechaEstado,
+    es.Comentarios
+FROM Paquetes p
+JOIN EstadosEnvio es ON p.IdPaquete = es.IdPaquete
+WHERE p.CodigoSeguimiento = @CodigoSeguimiento
+ORDER BY es.FechaEstado;
