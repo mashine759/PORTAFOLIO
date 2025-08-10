@@ -1,0 +1,104 @@
+-- 1. Crear base de datos
+CREATE DATABASE CapacitacionesEmpresa;
+GO
+
+USE CapacitacionesEmpresa;
+GO
+
+-- 2. Crear tabla de empleados
+CREATE TABLE Empleados (
+    IdEmpleado INT PRIMARY KEY IDENTITY(1,1),
+    Nombre NVARCHAR(50) NOT NULL,
+    Apellido NVARCHAR(50) NOT NULL,
+    Departamento NVARCHAR(50),
+    FechaIngreso DATE
+);
+GO
+
+-- 3. Crear tabla de cursos
+CREATE TABLE Cursos (
+    IdCurso INT PRIMARY KEY IDENTITY(1,1),
+    NombreCurso NVARCHAR(100) NOT NULL,
+    Descripcion NVARCHAR(MAX),
+    DuracionHoras INT
+);
+GO
+
+-- 4. Crear tabla de capacitaciones
+CREATE TABLE Capacitaciones (
+    IdCapacitacion INT PRIMARY KEY IDENTITY(1,1),
+    IdEmpleado INT NOT NULL,
+    IdCurso INT NOT NULL,
+    FechaInicio DATE,
+    FechaFin DATE,
+    Estado NVARCHAR(20) CHECK (Estado IN ('Pendiente', 'En curso', 'Finalizado')),
+    Calificacion DECIMAL(5,2),
+    FOREIGN KEY (IdEmpleado) REFERENCES Empleados(IdEmpleado),
+    FOREIGN KEY (IdCurso) REFERENCES Cursos(IdCurso)
+);
+GO
+
+-- 5. Insertar datos de ejemplo
+INSERT INTO Empleados (Nombre, Apellido, Departamento, FechaIngreso) VALUES
+('Laura', 'Martínez', 'Recursos Humanos', '2023-05-10'),
+('Carlos', 'Pérez', 'Logística', '2022-09-15'),
+('Ana', 'López', 'TI', '2021-03-01');
+
+INSERT INTO Cursos (NombreCurso, Descripcion, DuracionHoras) VALUES
+('Excel Avanzado', 'Uso de tablas dinámicas, macros y fórmulas avanzadas', 20),
+('SQL Básico', 'Introducción a consultas y gestión de bases de datos', 15),
+('Comunicación Efectiva', 'Mejora de habilidades interpersonales', 10);
+
+INSERT INTO Capacitaciones (IdEmpleado, IdCurso, FechaInicio, FechaFin, Estado, Calificacion) VALUES
+(1, 1, '2024-01-10', '2024-01-20', 'Finalizado', 95.5),
+(2, 2, '2024-02-05', NULL, 'En curso', NULL),
+(3, 3, '2024-02-15', '2024-02-20', 'Finalizado', 88.0);
+GO
+
+-- 6. Consulta: Progreso de capacitaciones
+SELECT 
+    e.Nombre,
+    e.Apellido,
+    c.NombreCurso,
+    cap.Estado,
+    cap.Calificacion
+FROM Capacitaciones cap
+JOIN Empleados e ON cap.IdEmpleado = e.IdEmpleado
+JOIN Cursos c ON cap.IdCurso = c.IdCurso;
+GO
+
+-- 7. Consulta: Cursos finalizados con calificación > 90
+SELECT 
+    e.Nombre,
+    e.Apellido,
+    c.NombreCurso,
+    cap.Calificacion
+FROM Capacitaciones cap
+JOIN Empleados e ON cap.IdEmpleado = e.IdEmpleado
+JOIN Cursos c ON cap.IdCurso = c.IdCurso
+WHERE cap.Estado = 'Finalizado' AND cap.Calificacion > 90;
+GO
+
+-- 8. Contar cuántos empleados están actualmente en capacitación
+SELECT COUNT(DISTINCT IdEmpleado) AS EmpleadosEnCapacitacion
+FROM Capacitaciones
+WHERE Estado = 'En curso';
+
+-- 9. Ver todos los cursos que aún no han sido tomados por un empleado específico
+DECLARE @IdEmpleado INT = 2; -- Cambia por el empleado deseado
+
+SELECT c.NombreCurso
+FROM Cursos c
+WHERE c.IdCurso NOT IN (
+    SELECT IdCurso FROM Capacitaciones WHERE IdEmpleado = @IdEmpleado
+);
+
+-- 10. Listar empleados con el número total de capacitaciones realizadas
+SELECT 
+    e.Nombre,
+    e.Apellido,
+    COUNT(cap.IdCapacitacion) AS TotalCapacitaciones
+FROM Empleados e
+LEFT JOIN Capacitaciones cap ON e.IdEmpleado = cap.IdEmpleado
+GROUP BY e.Nombre, e.Apellido
+ORDER BY TotalCapacitaciones DESC;
