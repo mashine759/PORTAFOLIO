@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: left;
+            align-items: left;
+            height: 100vh;
+        }
+
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            width: 320px;
+        }
+
+        h1 {
+            font-size: 20px;
+            text-align: center;
+            color: #333;
+        }
+
+        label {
+            font-weight: bold;
+            display: flex;
+            
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+        }
+
+        fieldset {
+            border: none;
+            padding: 1px 0;
+            margin-top: 1px;
+        }
+
+        .department-options {
+        margin-top: 10px;
+        
+        
+        }
+        .department-options label {
+            font-weight: normal;
+            display: inline-flex; /* Asegura que el texto y el radio button estén en línea */
+            align-items: center; /* Alinea verticalmente el radio button y el texto */
+            margin-top: 5px;
+        }
+
+        input[type="radio"] {
+            margin-right: 5px;
+        }
+
+        .submit-btn,
+        .clear-btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .submit-btn:hover,
+        .clear-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .clear-btn {
+            background-color: #f44336;
+        }
+
+        .clear-btn:hover {
+            background-color: #d32f2f;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+
+    <script>
+        function validarFormulario() {
+            // Obtener los valores de los campos
+            let idEmpleado = document.getElementById("idEmpleado").value.trim();
+            let nombre = document.getElementById("nombre").value.trim();
+            let apellido = document.getElementById("apellido").value.trim();
+            let telefono = document.getElementById("telefono").value.trim();
+            let oficinas = document.getElementById("oficinas").value;
+            let departamento = document.getElementById("departamento").value;
+
+            // Mensaje de error
+            let errorMsg = document.getElementById("error-message");
+            errorMsg.style.display = "none"; // Ocultar mensaje de error al inicio
+            errorMsg.innerHTML = ""; 
+
+            // Validar campos vacíos
+            if (idEmpleado === "" || nombre === "" || apellido === "" || telefono === "" || departamento === "" || oficinas === "") {
+                errorMsg.innerHTML = "⚠️ Todos los campos son obligatorios.";
+                errorMsg.style.display = "block";
+                return false; // Detener el envío del formulario
+            }
+
+            // Validar que el número de teléfono solo contenga dígitos y tenga una longitud de 10 caracteres
+            let phoneRegex = /^[0-9]{10}$/;
+            if (!phoneRegex.test(telefono)) {
+                errorMsg.innerHTML = "⚠️ El número de teléfono debe tener 10 dígitos.";
+                errorMsg.style.display = "block";
+                return false;
+            }
+
+            // Si pasa todas las validaciones, enviar el formulario
+            google.script.run.appendRowFromFormSubmit(document.getElementById("datosFormulario"));
+        }
+
+        function limpiarFormulario() {
+            // Limpiar todos los campos del formulario
+            document.getElementById("datosFormulario").reset();
+            // Ocultar el mensaje de error al limpiar
+            document.getElementById("error-message").style.display = "none";
+        }
+    </script>
+
+</head>
+<body>
+
+    <div class="container">
+        <h1>Información:</h1>
+        <form id="datosFormulario">
+            <label for="idEmpleado">ID Empleado</label>
+            <input type="text" id="idEmpleado" name="idEmpleado" maxlength="5" required><br>
+
+            <label for="nombre">Nombre</label>
+            <input type="text" id="nombre" name="nombre" required>
+
+            <label for="apellido">Apellido</label>
+            <input type="text" id="apellido" name="apellido" required>
+
+            <label for="telefono">Número de Teléfono</label>
+            <input type="text" id="telefono" name="telefono" maxlength="10" required><br>
+
+            <label for="oficinas"><strong>Oficinas:</strong></label>
+            <select id="oficinas" name="oficinas" required>
+                <option value="">Seleccione una oficina</option>
+                <option value="Guadalajara">Guadalajara</option>
+                <option value="CDMX">CDMX</option>
+                <option value="Veracruz">Veracruz</option>
+                <option value="Monterrey">Monterrey</option>
+            </select><br>
+
+            <label for="departamento"><strong>Departamento:</strong></label>
+            <select id="departamento" name="departamento" required>
+                <option value="">Seleccione un departamento</option>
+                <option value="Marketing">Marketing</option>
+                <option value="Produccion">Produccion</option>
+                <option value="Atencion al cliente">Atencion al cliente</option>
+                <option value="Recursos Humanos">Recursos Humanos</option>
+            </select><br><br>
+
+            <p id="error-message" class="error-message"></p>
+
+            <button type="button" class="submit-btn" onclick="validarFormulario()">Agregar</button>
+            <button type="button" class="clear-btn" onclick="limpiarFormulario()">Limpiar</button>
+        </form>
+    </div>
+
+</body>
+</html>
