@@ -1,0 +1,69 @@
+// Función que determina el estado del juego de Gato
+function Ganador(tablero) {
+  // Convertimos todas las celdas del tablero a mayúsculas para uniformidad
+  let dato = tablero.map(fila => fila.map(celda => celda.toString().toUpperCase()));
+
+  // Definimos todas las posibles líneas ganadoras: filas, columnas y diagonales
+  let lineas = [
+    [dato[0][0], dato[0][1], dato[0][2]], // fila 1
+    [dato[1][0], dato[1][1], dato[1][2]], // fila 2
+    [dato[2][0], dato[2][1], dato[2][2]], // fila 3
+
+    [dato[0][0], dato[1][0], dato[2][0]], // columna 1
+    [dato[0][1], dato[1][1], dato[2][1]], // columna 2
+    [dato[0][2], dato[1][2], dato[2][2]], // columna 3
+
+    [dato[0][0], dato[1][1], dato[2][2]], // diagonal principal
+    [dato[0][2], dato[1][1], dato[2][0]], // diagonal secundaria
+  ];
+
+  // Revisamos cada línea para ver si hay un ganador
+  for (let opcion of lineas) {
+    if (opcion.every(valor => valor === "X")) return "¡X GANA!"; // X completa una línea
+    if (opcion.every(valor => valor === "O")) return "¡O GANA!"; // O completa una línea
+  }
+
+  // Si todas las celdas están llenas y no hay ganador, es empate
+  if (dato.flat().every(valor => valor != "")) return "ES EMPATE";
+
+  // Si no hay ganador ni empate, no devuelve nada (el juego sigue)
+  return;
+}
+
+// Función que convierte un rango de celdas a mayúsculas como ejemplo
+function Amayus(rango) {
+  // Convertimos todas las celdas a mayúsculas
+  let dato = rango.map(fila => fila.map(celda => celda.toString().toUpperCase()));
+
+  // Devolvemos los primeros 3 valores de la primera fila
+  return [[dato[0][0], dato[0][1], dato[0][2]]];
+}
+
+// Función para limpiar el tablero de Gato en Google Sheets
+function limpiarGato() {
+  const libro = SpreadsheetApp.getActiveSpreadsheet(); // Obtenemos el libro activo
+  const hoja = libro.getActiveSheet(); // Obtenemos la hoja activa
+  const nombrehoja = hoja.getName(); // Obtenemos el nombre de la hoja
+  const ui = SpreadsheetApp.getUi(); // Interfaz de usuario para alertas
+
+  // Verificamos que la hoja activa sea "Gato"
+  if (nombrehoja !== "Gato") {
+    ui.alert(
+      `Accion no permitida, debe validar que se encuentra en la hoja Gato \n Hoja actual: "${nombrehoja}"`,
+      ui.ButtonSet.OK
+    );
+    return; // Salimos de la función si no es la hoja correcta
+  }
+
+  // Pedimos confirmación al usuario antes de limpiar el rango
+  const confirmacion = ui.alert(
+    '¿Deseas limpiar el rango B1:D3 de la hoja Gato?',
+    ui.ButtonSet.YES_NO
+  );
+
+  // Si el usuario confirma, limpiamos el rango B1:D3
+  if (confirmacion === ui.Button.YES) {
+    const rango = hoja.getRange("B1:D3");
+    rango.clearContent(); // Limpiamos el contenido de las celdas
+  }
+}
