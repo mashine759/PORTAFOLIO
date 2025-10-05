@@ -1,0 +1,39 @@
+Hoy les presento uno de mis proyectos para el portafolio 🔭 (¡de los muchos que se vienen!).
+
+
+
+Este proyecto está enfocado en aprendizaje interactivo de kanjis japoneses, ya que yo misma estoy estudiando japonés y quise unir mi aprendizaje con mi portafolio de programación. La plataforma tiene 3 escenarios distintos para memorizar kanjis de manera divertida, un menú para añadir o limpiar kanjis, y opciones de “cómo jugar” y cambiar el idioma entre español e inglés.
+
+
+
+▪️Space Shooter: dispara al kanji correcto.
+
+▪️Juego de cartas volteadas: memoriza y combina kanjis.
+
+▪️Lluvia de kanjis: arrastra cada kanji a los personajes correspondientes mientras aumenta la velocidad.
+
+
+
+Pensé que lo más difícil sería terminar el proyecto… pero lo más desafiante apareció después 😅. Al subirlo a Itch.io, me topé con que WebGL no soporta caracteres japoneses ni otros idiomas complejos. Esto hacía imposible que los usuarios agregaran sus propios kanjis.
+
+
+
+Después de dos días completos de investigación y prueba (y caso perder la cabeza), encontré la solución:
+
+
+
+▪️Los campos de texto de Unity no soportan bien IME (entrada de caracteres complejos) y el canvas captura todos los eventos de teclado, bloqueando los inputs HTML.
+
+▪️En versiones antiguas se usaba WebGLNativeInputField, pero en Unity 2021 ya no funciona.
+
+▪️La solución: combinar C# + JSLIB + DOM nativo para crear inputs HTML sobre el canvas, calcular su posición y manejar el foco manualmente.
+
+
+
+Pero, si están leyendo esta publicación significa algo... gane la batalla y termine mi proyecto. 
+
+
+
+Les comparto acá el link donde pueden ver mi proyecto
+
+https://mashinek759.itch.io/kanji-no-study
