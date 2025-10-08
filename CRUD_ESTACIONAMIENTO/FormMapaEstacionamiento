@@ -1,0 +1,140 @@
+using Estacionamiento_SDC.Clases;
+using System;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
+
+namespace Estacionamiento_SDC
+{
+    /// <summary>
+    /// Formulario que muestra el estado actual del estacionamiento de forma visual.
+    /// Utiliza controles PictureBox para representar cada lugar.
+    /// </summary>
+    public partial class FormMapaEstacionamiento : Form
+    {
+        // =========================================================================
+        // I. INICIALIZACIÓN Y CARGA
+        // =========================================================================
+
+        public FormMapaEstacionamiento()
+        {
+            InitializeComponent();
+        }
+
+        private void FormMapaEstacionamiento_Load(object sender, EventArgs e)
+        {
+            // Al cargar el formulario, se inicializa el estado visual de todos los cajones.
+            ActualizarMapa();
+        }
+
+        // =========================================================================
+        // II. MÉTODOS DE RENDERIZACIÓN Y ACTUALIZACIÓN
+        // =========================================================================
+
+        /// <summary>
+        /// Recorre todos los controles PictureBox que representan un lugar (pbAxx, pbBxx, pbCxx)
+        /// y actualiza su color según el estado de ocupación en la BD.
+        /// </summary>
+        private void ActualizarMapa()
+        {
+            BDConexion conexion = new BDConexion();
+            // Obtener todos los lugares y su estado actual de la capa de datos
+            DataTable dtLugares = conexion.ObtenerLugares();
+
+            // Iterar sobre todos los controles del formulario
+            foreach (Control c in this.Controls)
+            {
+                // Filtrar solo los PictureBox cuyo nombre comience con el prefijo de lugar
+                if (c is PictureBox pb && (pb.Name.StartsWith("pbA") || pb.Name.StartsWith("pbB") || pb.Name.StartsWith("pbC")))
+                {
+                    // Extraer el número de lugar (ej: "A01", "B05") del nombre del control ("pbA01")
+                    string numeroLugar = pb.Name.Replace("pb", "");
+
+                    // 1. Buscar la información del lugar usando LINQ
+                    DataRow fila = dtLugares.AsEnumerable()
+                        .FirstOrDefault(r => r.Field<string>("NumeroLugar") == numeroLugar);
+
+                    if (fila != null)
+                    {
+                        bool ocupado = Convert.ToBoolean(fila["Ocupado"]);
+                        
+                        // 2. Asignar color: Rojo si ocupado, Transparente si libre (adopta el color/fondo del contenedor)
+                        pb.BackColor = ocupado ? Color.Red : Color.Transparent;
+
+                        // [Opcional] Configuración para depuración visual
+                        pb.BorderStyle = BorderStyle.FixedSingle;
+                        pb.Tag = numeroLugar; 
+
+                        // 3. Asignar evento Click: Es crucial desuscribir antes de suscribir para evitar múltiples eventos
+                        pb.Click -= pbLugar_Click;
+                        pb.Click += pbLugar_Click;
+                    }
+                    else
+                    {
+                        // Color de error si el lugar existe en el formulario pero no en la base de datos
+                        pb.BackColor = Color.Gray; 
+                    }
+                }
+            }
+        }
+
+        // =========================================================================
+        // III. EVENTOS DE INTERACCIÓN (CLICK)
+        // =========================================================================
+
+        /// <summary>
+        /// Maneja el evento click en cualquier PictureBox de lugar.
+        /// Muestra un cuadro de diálogo con los detalles del vehículo ocupante.
+        /// </summary>
+        private void pbLugar_Click(object sender, EventArgs e)
+        {
+            // Convertir el objeto que disparó el evento (sender) a PictureBox
+            PictureBox pb = sender as PictureBox;
+            if (pb == null) return;
+
+            // Obtener el número de lugar
+            string numeroLugar = pb.Name.Replace("pb", "");
+            
+            BDConexion conexion = new BDConexion();
+            // Obtener información detallada del lugar y el vehículo ocupante (JOIN de Lugares, Vehiculos, Historial)
+            DataRow info = conexion.ObtenerInfoLugar(numeroLugar);
+
+            // Verificar si hay datos válidos (el lugar está ocupado y tiene placa registrada)
+            if (info != null && !string.IsNullOrEmpty(info["Placa"].ToString()))
+            {
+                // Extraer y formatear los datos
+                string lugar = info["NumeroLugar"].ToString();
+                string placa = info["Placa"].ToString();
+                string propietario = info["NombrePropietario"].ToString();
+                string fechaIngreso = info["FechaEntrada"] != DBNull.Value
+                    ? Convert.ToDateTime(info["FechaEntrada"]).ToString("dd/MM/yyyy HH:mm")
+                    : "N/D";
+                string tipoUsuario = info["TipoUsuario"] != DBNull.Value
+                    ? info["TipoUsuario"].ToString()
+                    : "N/D";
+
+                // Construir el mensaje de detalle
+                string mensaje = "INFORMACIÓN DEL LUGAR\n" +
+                   "=====================\n\n" +
+                   $"Lugar: {lugar}\n" +
+                   $"Tipo de usuario: {tipoUsuario}\n\n" +
+                   $"Placa: {placa}\n" +
+                   $"Propietario: {propietario}\n\n" +
+                   $"Ingreso: {fechaIngreso}";
+
+                MessageBox.Show(
+                    mensaje,
+                    "Detalle del lugar ocupado",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
+            }
+            else
+            {
+                // Mensaje si el lugar está libre o los datos están incompletos
+                MessageBox.Show($"El lugar {numeroLugar} está libre.", "Lugar disponible");
+            }
+        }
+    }
+}
